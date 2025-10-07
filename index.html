@@ -1,69 +1,766 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Operação Justiça em Ação - O Jogo</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap"
+        rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #1a202c; }
-        .font-roboto-mono { font-family: 'Roboto Mono', monospace; }
-        .game-card { background-color: #2d3748; border: 1px solid #4a5568; }
-        .answer-btn { transition: all 0.2s ease-in-out; }
-        .screen { transition: opacity 0.5s ease-in-out; }
-        .hidden { display: none; }
-        #badges-container img { transition: transform 0.3s ease, opacity 0.5s ease; }
-        #badges-container img.hidden-badge { opacity: 0; transform: scale(0.5); }
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #1a202c;
+        }
+
+        .font-roboto-mono {
+            font-family: "Roboto Mono", monospace;
+        }
+
+        .game-card {
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+        }
+
+        .answer-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .screen {
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #badges-container img {
+            transition: transform 0.3s ease, opacity 0.5s ease;
+        }
+
+        #badges-container img.hidden-badge {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        #video-card {
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+
+        #video-card:not(.hidden) {
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="text-gray-200 flex items-center justify-center min-h-screen p-4">
 
+<body class="text-gray-200 flex items-center justify-center min-h-screen p-4">
     <div id="game-container" class="w-full max-w-3xl mx-auto">
-        <div class="text-center mb-6"> <h1 class="text-4xl font-bold font-roboto-mono tracking-wider text-yellow-400">OPERAÇÃO JUSTIÇA EM AÇÃO</h1> <p class="text-gray-400">Sua missão: Resolver os casos e se tornar um Mestre da Justiça.</p> </div> <div id="start-screen" class="screen game-card rounded-lg p-8 text-center shadow-2xl"> <h2 class="text-2xl font-bold mb-4">Briefing da Missão</h2> <p class="mb-6 text-gray-300">Agente, insira seu nome para iniciar a operação. Seu progresso será salvo localmente.</p> <input type="text" id="agent-name" placeholder="Digite seu nome de Agente" class="bg-gray-800 text-center w-full max-w-xs p-2 rounded mb-6 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"> <button onclick="startGame()" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg">INICIAR OPERAÇÃO</button> </div> <div id="quiz-screen" class="screen hidden w-full"> <div class="flex justify-between items-center mb-4 font-roboto-mono text-lg"> <div><span class="font-bold">XP: </span><span id="score" class="text-yellow-400 font-bold">0</span></div> <div><span id="rank" class="font-bold text-cyan-400"></span></div> </div> <div id="progress-bar-container" class="w-full bg-gray-700 rounded-full h-2.5 mb-4"> <div id="progress-bar" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-out;"></div> </div> <div class="game-card rounded-lg p-6 md:p-8 shadow-2xl"> <div class="mb-4 text-sm font-roboto-mono"><span>CASO Nº <span id="question-number">1</span> DE 10</span></div> <h2 id="question" class="text-xl md:text-2xl font-bold mb-6 min-h-[100px]"></h2> <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div> <div id="help-container" class="mt-6 text-center flex justify-center items-center gap-6"> <button id="hint-button" onclick="showHint()" class="text-sm text-cyan-400 hover:text-cyan-300">Precisa de uma pista, Agente?</button> <a href="https://gemini.google.com/u/1/gem/40be5599dc62" target="_blank" class="text-sm text-yellow-400 hover:text-yellow-300">Consultar Tutor SENAI</a> </div> </div> </div> <div id="feedback-screen" class="screen hidden w-full"> <div class="game-card rounded-lg p-6 md:p-8 shadow-2xl"> <h2 id="feedback-title" class="text-2xl font-bold mb-6 text-center">Análise do Caso</h2> <div id="rationales-container" class="space-y-4 mb-6"></div> <div class="text-center"> <button onclick="nextQuestion()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg">PRÓXIMO CASO</button> </div> </div> </div> <div id="end-screen" class="screen hidden game-card rounded-lg p-8 text-center shadow-2xl"> <h2 class="text-3xl font-bold text-yellow-400 mb-4">MISSÃO CONCLUÍDA!</h2> <p class="text-lg mb-2">Seu resultado final, Agente <span id="final-agent-name" class="font-bold"></span>:</p> <p class="text-5xl font-bold mb-4"><span id="final-score"></span> XP</p> <p class="text-2xl font-bold mb-6">Promoção para: <span id="final-rank" class="text-cyan-400"></span></p> <p class="mb-6 text-gray-300" id="end-message"></p> <div id="badges-container" class="mt-6 flex justify-center items-center gap-4"> <img id="badge-1" src="badges/Lucid_Origin_vector_art_badge_icon_Defender_of_Human_Rights_aw_2.jpg" class="h-20 w-20 hidden-badge" title="Defensor dos Direitos Humanos"> <img id="badge-2" src="badges/Lucid_Origin_Vector_art_badge_icon_of_the_Equality_Protector_a_1.jpg" class="h-20 w-20 hidden-badge" title="Protetor da Igualdade"> <img id="badge-3" src="badges/Lucid_Origin_vector_art_badge_icon_Labor_Law_Specialist_award__2.jpg" class="h-20 w-20 hidden-badge" title="Especialista Trabalhista"> <img id="badge-4" src="badges/Lucid_Origin_vector_art_badge_icon_Digital_Sentinel_award_Styl_2.jpg" class="h-20 w-20 hidden-badge" title="Sentinela Digital"> </div> <div id="study-guide-container" class="hidden mt-6 text-left p-4 bg-gray-800 rounded-lg border border-gray-700"> <h3 class="font-bold text-lg mb-2 text-yellow-400">Plano de Ação Sugerido:</h3> <p id="study-guide-text" class="text-gray-300 mb-4"></p> <a id="tutor-link-personalized" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Iniciar Sessão de Estudo com Tutor</a> </div> <button onclick="restartGame()" class="mt-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg">JOGAR NOVAMENTE</button> </div>
+        <div id="start-screen" class="screen game-card rounded-lg p-8 text-center shadow-2xl">
+            <!-- STORYBOOK SCREEN -->
+            <div class="text-center mb-6">
+                <h1 class="text-4xl font-bold font-roboto-mono tracking-wider text-yellow-400">
+                    OPERAÇÃO JUSTIÇA EM AÇÃO
+                </h1>
+                <p class="text-gray-400">
+                    Sua missão: Resolver os casos e se tornar um Mestre da Justiça.
+                </p>
+
+                <p class="mb-6 text-gray-300 leading-relaxed">
+                    Agente, antes de iniciar a
+                    <strong>Operação Justiça em Ação</strong>, você deve conhecer o
+                    contexto da missão. Leia atentamente o
+                    <strong>Storybook</strong> abaixo — ele contém as informações que
+                    orientarão suas decisões durante o jogo.
+                </p>
+
+                <button onclick="openStorybook()"
+                    class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg mb-6">
+                    📖 ABRIR STORYBOOK DE TREINAMENTO
+                </button>
+                <p class="text-sm text-gray-400 mb-4 italic">
+                    Após ler o Storybook, volte aqui e inicie sua operação.
+                </p>
+            </div>
+            <h2 class="text-2xl font-bold mb-4">Briefing da Missão</h2>
+            <p class="mb-6 text-gray-300">
+                Agente, insira seu nome para iniciar a operação. Seu progresso será
+                salvo localmente.
+            </p>
+            <input type="text" id="agent-name" placeholder="Digite seu nome de Agente"
+                class="bg-gray-800 text-center w-full max-w-xs p-2 rounded mb-6 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+            <button onclick="startGame()"
+                class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg">
+                INICIAR OPERAÇÃO
+            </button>
+        </div>
+        <div id="quiz-screen" class="screen hidden w-full">
+            <div class="flex justify-between items-center mb-4 font-roboto-mono text-lg">
+                <div>
+                    <span class="font-bold">XP: </span><span id="score" class="text-yellow-400 font-bold">0</span>
+                </div>
+                <div><span id="rank" class="font-bold text-cyan-400"></span></div>
+            </div>
+            <div id="progress-bar-container" class="w-full bg-gray-700 rounded-full h-2.5 mb-4">
+                <div id="progress-bar" class="bg-yellow-400 h-2.5 rounded-full"
+                    style="width: 0%; transition: width 0.5s ease-out"></div>
+            </div>
+            <div class="game-card rounded-lg p-6 md:p-8 shadow-2xl">
+                <div class="mb-4 text-sm font-roboto-mono">
+                    <span>CASO Nº <span id="question-number">1</span> DE 10</span>
+                </div>
+                <h2 id="question" class="text-xl md:text-2xl font-bold mb-6 min-h-[100px]"></h2>
+                <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="help-container" class="mt-6 text-center flex justify-center items-center gap-6">
+                    <button id="hint-button" onclick="showHint()" class="text-sm text-cyan-400 hover:text-cyan-300">
+                        Precisa de uma pista, Agente?
+                    </button>
+                    <a href="https://gemini.google.com/u/1/gem/40be5599dc62" target="_blank"
+                        class="text-sm text-yellow-400 hover:text-yellow-300">Consultar Tutor SENAI</a>
+                </div>
+            </div>
+        </div>
+        <div id="feedback-screen" class="screen hidden w-full">
+            <div class="game-card rounded-lg p-6 md:p-8 shadow-2xl">
+                <h2 id="feedback-title" class="text-2xl font-bold mb-6 text-center">
+                    Análise do Caso
+                </h2>
+                <div id="rationales-container" class="space-y-4 mb-6"></div>
+                <div class="text-center">
+                    <button onclick="nextQuestion()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg">
+                        PRÓXIMO CASO
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="end-screen" class="screen hidden game-card rounded-lg p-8 text-center shadow-2xl">
+            <h2 class="text-3xl font-bold text-yellow-400 mb-4">
+                MISSÃO CONCLUÍDA!
+            </h2>
+            <p class="text-lg mb-2">
+                Seu resultado final, Agente
+                <span id="final-agent-name" class="font-bold"></span>:
+            </p>
+            <p class="text-5xl font-bold mb-4"><span id="final-score"></span> XP</p>
+            <p class="text-2xl font-bold mb-6">
+                Promoção para: <span id="final-rank" class="text-cyan-400"></span>
+            </p>
+            <p class="mb-6 text-gray-300" id="end-message"></p>
+            <div id="badges-container" class="mt-6 flex justify-center items-center gap-4">
+                <img id="badge-1" src="badges/Lucid_Origin_vector_art_badge_icon_Defender_of_Human_Rights_aw_2.jpg"
+                    class="h-20 w-20 hidden-badge" title="Defensor dos Direitos Humanos" />
+                <img id="badge-2" src="badges/Lucid_Origin_Vector_art_badge_icon_of_the_Equality_Protector_a_1.jpg"
+                    class="h-20 w-20 hidden-badge" title="Protetor da Igualdade" />
+                <img id="badge-3" src="badges/Lucid_Origin_vector_art_badge_icon_Labor_Law_Specialist_award__2.jpg"
+                    class="h-20 w-20 hidden-badge" title="Especialista Trabalhista" />
+                <img id="badge-4" src="badges/Lucid_Origin_vector_art_badge_icon_Digital_Sentinel_award_Styl_2.jpg"
+                    class="h-20 w-20 hidden-badge" title="Sentinela Digital" />
+            </div>
+            <div id="study-guide-container"
+                class="hidden mt-6 text-left p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <h3 class="font-bold text-lg mb-2 text-yellow-400">
+                    Plano de Ação Sugerido:
+                </h3>
+                <p id="study-guide-text" class="text-gray-300 mb-4"></p>
+                <a id="tutor-link-personalized" href="#" target="_blank"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Iniciar Sessão de
+                    Estudo com Tutor</a>
+            </div>
+            <!-- CARD DO VÍDEO FINAL -->
+            <div id="video-card" class="mt-8 hidden">
+                <h3 class="text-2xl font-bold text-yellow-400 mb-4">
+                    🎬 Missão Especial de Encerramento
+                </h3>
+                <p class="text-gray-300 mb-4">
+                    Assista ao vídeo abaixo para concluir oficialmente sua jornada como
+                    Agente da Justiça.
+                </p>
+                <div class="rounded-lg overflow-hidden shadow-lg border border-gray-700">
+                    <iframe id="final-video" class="w-full aspect-video" src="https://www.youtube.com/embed/dGE-5q6LOHc"
+                        title="Operação Justiça em Ação - Encerramento"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+
+            <button onclick="restartGame()"
+                class="mt-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg">
+                JOGAR NOVAMENTE
+            </button>
+        </div>
     </div>
 
     <script>
-        const quizData = [ { question: "No cenário do 'Caso da Inclusão Negada', um colega é alvo constante de piadas ofensivas por causa de sua etnia. Qual legislação brasileira é a principal ferramenta para combater essa prática?", topic: "Direito e Cidadania", hint: "Pense na legislação criada especificamente para proteger contra a discriminação baseada na cor da pele ou etnia.", answerOptions: [ { text: "Estatuto da Igualdade Racial (Lei 12.288/2010)", isCorrect: true, rationale: "Esta lei é específica para combater a discriminação étnica e promover a igualdade de oportunidades." }, { text: "Declaração Universal dos Direitos Humanos", isCorrect: false, rationale: "A DUDH condena a discriminação, mas o Estatuto é uma lei federal brasileira com aplicação direta." }, { text: "Lei da Aprendizagem", isCorrect: false, rationale: "Esta lei trata das regras do contrato do jovem aprendiz, não de discriminação racial." }, { text: "Código de Defesa do Consumidor", isCorrect: false, rationale: "Este código regula as relações de consumo e não se aplica a relações interpessoais no trabalho." } ] }, { question: "Na 'Missão Receita Oculta', um empresário vende produtos sem emitir nota fiscal para 'economizar' nos impostos. Como essa prática é legalmente chamada?", topic: "Direito Tributário", hint: "A palavra-chave é a intenção de 'esconder' a receita do governo.", answerOptions: [ { text: "Planejamento tributário", isCorrect: false, rationale: "Planejamento tributário envolve métodos legais para reduzir impostos, o que é diferente de não pagá-los." }, { text: "Sonegação fiscal", isCorrect: true, rationale: "Sonegar significa ocultar informações das autoridades fiscais para não pagar impostos, o que é crime." }, { text: "Elusão fiscal", isCorrect: false, rationale: "Elusão fiscal é buscar brechas na lei para diminuir impostos; a não emissão de nota é claramente ilegal." }, { text: "Contrabando", isCorrect: false, rationale: "Contrabando é a importação/exportação de produtos proibidos ou sem pagamento de taxas, diferente da venda interna sem nota." } ] }, { question: "Na 'Operação Contrato Fantasma', qual é a jornada de trabalho máxima permitida para um jovem aprendiz que ainda não concluiu o ensino fundamental?", topic: "Direito do Trabalho", hint: "A legislação do aprendiz prioriza o tempo dedicado à educação formal.", answerOptions: [ { text: "6 horas diárias", isCorrect: true, rationale: "A lei limita a jornada a 6 horas para aprendizes que não completaram o ensino fundamental, para não prejudicar os estudos." }, { text: "8 horas diárias", isCorrect: false, rationale: "A jornada de 8 horas só é permitida para aprendizes que já concluíram o ensino fundamental." }, { text: "4 horas diárias", isCorrect: false, rationale: "Embora existam contratos com essa carga, o limite máximo legal é de 6 horas para quem está no ensino fundamental." }, { text: "7 horas diárias", isCorrect: false, rationale: "Qualquer jornada acima de 6 horas para um aprendiz que não concluiu o ensino fundamental está em desacordo com a lei." } ] }, { question: "Qual o princípio fundamental da Declaração Universal dos Direitos Humanos (DUDH) que serve de base para todos os outros direitos?", topic: "Direitos Humanos e Cidadania", hint: "Pense no valor essencial que todas as pessoas possuem, simplesmente por existirem.", answerOptions: [ { text: "A dignidade é inerente a todos os seres humanos e é o fundamento da liberdade e da justiça.", isCorrect: true, rationale: "Este é o conceito central; todos os direitos derivam do reconhecimento do valor intrínseco de cada pessoa." }, { text: "A propriedade privada é o direito mais importante de todos.", isCorrect: false, rationale: "A propriedade é um direito previsto, mas o princípio basilar da DUDH é mais amplo e focado na condição humana." }, { text: "Apenas cidadãos de países desenvolvidos possuem todos os direitos.", isCorrect: false, rationale: "O nome 'Universal' indica que os direitos se aplicam a todas as pessoas, em todos os lugares." }, { text: "A liberdade de expressão não possui quaisquer limites.", isCorrect: false, rationale: "A liberdade de expressão é um direito fundamental, mas pode ser limitada para respeitar os direitos de outros." } ] }, { question: "Um jovem compra um fone pela internet, mas ele chega com defeito. Segundo o Código de Defesa do Consumidor, o que ele pode exigir?", topic: "Direito do Consumidor", hint: "A lei oferece ao consumidor um poder de escolha para solucionar o problema de um produto com defeito.", answerOptions: [ { text: "Apenas um cupom de desconto para a próxima compra.", isCorrect: false, rationale: "Um desconto não resolve o problema do produto defeituoso e não é uma das opções garantidas por lei." }, { text: "A substituição do produto, o conserto em até 30 dias ou o dinheiro de volta.", isCorrect: true, rationale: "O código garante ao consumidor a escolha entre essas três opções caso o vício do produto não seja sanado no prazo legal." }, { text: "Apenas o envio do produto para o conserto.", isCorrect: false, rationale: "O conserto é uma opção, mas a lei dá ao consumidor o direito de escolher também a troca ou a devolução do dinheiro." }, { text: "Apenas a troca por um produto de valor igual ou inferior.", isCorrect: false, rationale: "A troca é um direito, mas o consumidor também tem a opção de receber seu dinheiro de volta." } ] }, { question: "Um funcionário tira um 'print' de uma conversa particular e a espalha no grupo da empresa. Essa atitude viola algum princípio do Direito Digital?", topic: "Direito Digital", hint: "Direitos fundamentais como a privacidade também são válidos no ambiente online.", answerOptions: [ { text: "Sim, pois fere o direito à privacidade e à intimidade da pessoa exposta.", isCorrect: true, rationale: "A proteção à privacidade é um direito constitucional que se estende às comunicações digitais." }, { text: "Não, pois o que é compartilhado em aplicativos de mensagem é considerado público.", isCorrect: false, rationale: "Conversas privadas, mesmo em meio digital, são protegidas pelo sigilo das comunicações." }, { text: "Sim, mas apenas se a conversa divulgada contiver informações falsas.", isCorrect: false, rationale: "A violação da privacidade ocorre pela simples exposição não autorizada, independentemente do conteúdo." }, { text: "Não, desde que a pessoa que tirou o 'print' não tenha obtido lucro com isso.", isCorrect: false, rationale: "O dano aqui é moral (violação da privacidade) e não depende de prejuízo financeiro." } ] }, { question: "Um gerente expõe um funcionário a situações humilhantes de forma repetitiva na frente dos colegas. Como o Direito do Trabalho classifica essa conduta?", topic: "Direito do Trabalho", hint: "A chave para definir essa conduta é a repetição de atos que visam minar a integridade psicológica do trabalhador.", answerOptions: [ { text: "Assédio moral", isCorrect: true, rationale: "Caracteriza-se pela exposição repetitiva a situações vexatórias que visam degradar o ambiente de trabalho." }, { text: "Assédio sexual", isCorrect: false, rationale: "O assédio sexual envolve constrangimento com conotação sexual, o que é diferente do cenário." }, { text: "Bullying", isCorrect: false, rationale: "Embora semelhante, 'assédio moral' é o termo jurídico para essa prática nas relações de trabalho." }, { text: "Chamada de atenção disciplinar", isCorrect: false, rationale: "Uma chamada de atenção deve ser reservada e respeitosa, não pública e humilhante." } ] }, { question: "Qual o propósito principal da contribuição mensal ao INSS descontada do salário do trabalhador?", topic: "Direito Previdenciário", hint: "Pense nisso como um 'seguro' que protege o trabalhador quando ele não pode mais exercer sua atividade.", answerOptions: [ { text: "Garantir ao trabalhador benefícios como aposentadoria, auxílio-doença e pensão.", isCorrect: true, rationale: "Essa contribuição funciona como um seguro social que ampara o trabalhador em momentos de incapacidade ou idade avançada." }, { text: "Financiar o Sistema Único de Saúde (SUS).", isCorrect: false, rationale: "A contribuição ao INSS é direcionada especificamente para os benefícios dos trabalhadores e seus dependentes." }, { text: "Pagar o Imposto de Renda.", isCorrect: false, rationale: "O Imposto de Renda é um tributo diferente, com outra finalidade." }, { text: "Custear o seguro-desemprego.", isCorrect: false, rationale: "O seguro-desemprego é financiado por outro fundo (FAT)." } ] }, { question: "Qual a diferença essencial entre um contrato de estágio e um contrato de trabalho formal (CLT)?", topic: "Direito do Trabalho", hint: "A natureza do contrato de estágio está diretamente ligada à instituição de ensino do estudante.", answerOptions: [ { text: "O estágio não gera vínculo de emprego e seu objetivo principal é o aprendizado.", isCorrect: true, rationale: "A lei define o estágio como um ato educativo escolar supervisionado, não uma relação de trabalho tradicional." }, { text: "Apenas o trabalhador CLT tem direito a férias.", isCorrect: false, rationale: "O estagiário também tem direito a um recesso remunerado de 30 dias após 12 meses." }, { text: "O estagiário não precisa cumprir uma carga horária definida.", isCorrect: false, rationale: "O estágio deve prever carga horária clara, compatível com as atividades escolares e limitada por lei." }, { text: "Apenas o estágio exige um supervisor.", isCorrect: false, rationale: "Todo trabalhador também responde a um gestor, mas o supervisor de estágio tem um papel pedagógico obrigatório." } ] }, { question: "Um jovem aprendiz sofre piadas e é excluído pelos colegas de forma sistemática. Essa situação se enquadra melhor em qual conceito?", topic: "Direito e Cidadania", hint: "Pense no termo usado para descrever atos de violência intencionais e repetidos, praticados por um ou mais agressores.", answerOptions: [ { text: "Conflito interpessoal", isCorrect: false, rationale: "Um conflito é uma divergência pontual, enquanto a situação descrita envolve perseguição contínua." }, { text: "Crise de adaptação", isCorrect: false, rationale: "Dificuldades de adaptação não justificam atos de agressão e exclusão por parte dos colegas." }, { text: "Bullying no trabalho", isCorrect: true, rationale: "O bullying é caracterizado por atos negativos e repetitivos, praticados contra uma pessoa, minando sua dignidade." }, { text: "Competitividade excessiva", isCorrect: false, rationale: "A competição saudável não envolve a humilhação ou o isolamento de colegas." } ] } ];
-        const screens = { start: document.getElementById('start-screen'), quiz: document.getElementById('quiz-screen'), feedback: document.getElementById('feedback-screen'), end: document.getElementById('end-screen') };
-        let currentQuestionIndex, score, shuffledQuestions, agentData = {};
+        const quizData = [
+            {
+                question:
+                    "No cenário do 'Caso da Inclusão Negada', um colega é alvo constante de piadas ofensivas por causa de sua etnia. Qual legislação brasileira é a principal ferramenta para combater essa prática?",
+                topic: "Direito e Cidadania",
+                hint: "Pense na legislação criada especificamente para proteger contra a discriminação baseada na cor da pele ou etnia.",
+                answerOptions: [
+                    {
+                        text: "Estatuto da Igualdade Racial (Lei 12.288/2010)",
+                        isCorrect: true,
+                        rationale:
+                            "Esta lei é específica para combater a discriminação étnica e promover a igualdade de oportunidades.",
+                    },
+                    {
+                        text: "Declaração Universal dos Direitos Humanos",
+                        isCorrect: false,
+                        rationale:
+                            "A DUDH condena a discriminação, mas o Estatuto é uma lei federal brasileira com aplicação direta.",
+                    },
+                    {
+                        text: "Lei da Aprendizagem",
+                        isCorrect: false,
+                        rationale:
+                            "Esta lei trata das regras do contrato do jovem aprendiz, não de discriminação racial.",
+                    },
+                    {
+                        text: "Código de Defesa do Consumidor",
+                        isCorrect: false,
+                        rationale:
+                            "Este código regula as relações de consumo e não se aplica a relações interpessoais no trabalho.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Na 'Missão Receita Oculta', um empresário vende produtos sem emitir nota fiscal para 'economizar' nos impostos. Como essa prática é legalmente chamada?",
+                topic: "Direito Tributário",
+                hint: "A palavra-chave é a intenção de 'esconder' a receita do governo.",
+                answerOptions: [
+                    {
+                        text: "Planejamento tributário",
+                        isCorrect: false,
+                        rationale:
+                            "Planejamento tributário envolve métodos legais para reduzir impostos, o que é diferente de não pagá-los.",
+                    },
+                    {
+                        text: "Sonegação fiscal",
+                        isCorrect: true,
+                        rationale:
+                            "Sonegar significa ocultar informações das autoridades fiscais para não pagar impostos, o que é crime.",
+                    },
+                    {
+                        text: "Elusão fiscal",
+                        isCorrect: false,
+                        rationale:
+                            "Elusão fiscal é buscar brechas na lei para diminuir impostos; a não emissão de nota é claramente ilegal.",
+                    },
+                    {
+                        text: "Contrabando",
+                        isCorrect: false,
+                        rationale:
+                            "Contrabando é a importação/exportação de produtos proibidos ou sem pagamento de taxas, diferente da venda interna sem nota.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Na 'Operação Contrato Fantasma', qual é a jornada de trabalho máxima permitida para um jovem aprendiz que ainda não concluiu o ensino fundamental?",
+                topic: "Direito do Trabalho",
+                hint: "A legislação do aprendiz prioriza o tempo dedicado à educação formal.",
+                answerOptions: [
+                    {
+                        text: "6 horas diárias",
+                        isCorrect: true,
+                        rationale:
+                            "A lei limita a jornada a 6 horas para aprendizes que não completaram o ensino fundamental, para não prejudicar os estudos.",
+                    },
+                    {
+                        text: "8 horas diárias",
+                        isCorrect: false,
+                        rationale:
+                            "A jornada de 8 horas só é permitida para aprendizes que já concluíram o ensino fundamental.",
+                    },
+                    {
+                        text: "4 horas diárias",
+                        isCorrect: false,
+                        rationale:
+                            "Embora existam contratos com essa carga, o limite máximo legal é de 6 horas para quem está no ensino fundamental.",
+                    },
+                    {
+                        text: "7 horas diárias",
+                        isCorrect: false,
+                        rationale:
+                            "Qualquer jornada acima de 6 horas para um aprendiz que não concluiu o ensino fundamental está em desacordo com a lei.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Qual o princípio fundamental da Declaração Universal dos Direitos Humanos (DUDH) que serve de base para todos os outros direitos?",
+                topic: "Direitos Humanos e Cidadania",
+                hint: "Pense no valor essencial que todas as pessoas possuem, simplesmente por existirem.",
+                answerOptions: [
+                    {
+                        text: "A dignidade é inerente a todos os seres humanos e é o fundamento da liberdade e da justiça.",
+                        isCorrect: true,
+                        rationale:
+                            "Este é o conceito central; todos os direitos derivam do reconhecimento do valor intrínseco de cada pessoa.",
+                    },
+                    {
+                        text: "A propriedade privada é o direito mais importante de todos.",
+                        isCorrect: false,
+                        rationale:
+                            "A propriedade é um direito previsto, mas o princípio basilar da DUDH é mais amplo e focado na condição humana.",
+                    },
+                    {
+                        text: "Apenas cidadãos de países desenvolvidos possuem todos os direitos.",
+                        isCorrect: false,
+                        rationale:
+                            "O nome 'Universal' indica que os direitos se aplicam a todas as pessoas, em todos os lugares.",
+                    },
+                    {
+                        text: "A liberdade de expressão não possui quaisquer limites.",
+                        isCorrect: false,
+                        rationale:
+                            "A liberdade de expressão é um direito fundamental, mas pode ser limitada para respeitar os direitos de outros.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Um jovem compra um fone pela internet, mas ele chega com defeito. Segundo o Código de Defesa do Consumidor, o que ele pode exigir?",
+                topic: "Direito do Consumidor",
+                hint: "A lei oferece ao consumidor um poder de escolha para solucionar o problema de um produto com defeito.",
+                answerOptions: [
+                    {
+                        text: "Apenas um cupom de desconto para a próxima compra.",
+                        isCorrect: false,
+                        rationale:
+                            "Um desconto não resolve o problema do produto defeituoso e não é uma das opções garantidas por lei.",
+                    },
+                    {
+                        text: "A substituição do produto, o conserto em até 30 dias ou o dinheiro de volta.",
+                        isCorrect: true,
+                        rationale:
+                            "O código garante ao consumidor a escolha entre essas três opções caso o vício do produto não seja sanado no prazo legal.",
+                    },
+                    {
+                        text: "Apenas o envio do produto para o conserto.",
+                        isCorrect: false,
+                        rationale:
+                            "O conserto é uma opção, mas a lei dá ao consumidor o direito de escolher também a troca ou a devolução do dinheiro.",
+                    },
+                    {
+                        text: "Apenas a troca por um produto de valor igual ou inferior.",
+                        isCorrect: false,
+                        rationale:
+                            "A troca é um direito, mas o consumidor também tem a opção de receber seu dinheiro de volta.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Um funcionário tira um 'print' de uma conversa particular e a espalha no grupo da empresa. Essa atitude viola algum princípio do Direito Digital?",
+                topic: "Direito Digital",
+                hint: "Direitos fundamentais como a privacidade também são válidos no ambiente online.",
+                answerOptions: [
+                    {
+                        text: "Sim, pois fere o direito à privacidade e à intimidade da pessoa exposta.",
+                        isCorrect: true,
+                        rationale:
+                            "A proteção à privacidade é um direito constitucional que se estende às comunicações digitais.",
+                    },
+                    {
+                        text: "Não, pois o que é compartilhado em aplicativos de mensagem é considerado público.",
+                        isCorrect: false,
+                        rationale:
+                            "Conversas privadas, mesmo em meio digital, são protegidas pelo sigilo das comunicações.",
+                    },
+                    {
+                        text: "Sim, mas apenas se a conversa divulgada contiver informações falsas.",
+                        isCorrect: false,
+                        rationale:
+                            "A violação da privacidade ocorre pela simples exposição não autorizada, independentemente do conteúdo.",
+                    },
+                    {
+                        text: "Não, desde que a pessoa que tirou o 'print' não tenha obtido lucro com isso.",
+                        isCorrect: false,
+                        rationale:
+                            "O dano aqui é moral (violação da privacidade) e não depende de prejuízo financeiro.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Um gerente expõe um funcionário a situações humilhantes de forma repetitiva na frente dos colegas. Como o Direito do Trabalho classifica essa conduta?",
+                topic: "Direito do Trabalho",
+                hint: "A chave para definir essa conduta é a repetição de atos que visam minar a integridade psicológica do trabalhador.",
+                answerOptions: [
+                    {
+                        text: "Assédio moral",
+                        isCorrect: true,
+                        rationale:
+                            "Caracteriza-se pela exposição repetitiva a situações vexatórias que visam degradar o ambiente de trabalho.",
+                    },
+                    {
+                        text: "Assédio sexual",
+                        isCorrect: false,
+                        rationale:
+                            "O assédio sexual envolve constrangimento com conotação sexual, o que é diferente do cenário.",
+                    },
+                    {
+                        text: "Bullying",
+                        isCorrect: false,
+                        rationale:
+                            "Embora semelhante, 'assédio moral' é o termo jurídico para essa prática nas relações de trabalho.",
+                    },
+                    {
+                        text: "Chamada de atenção disciplinar",
+                        isCorrect: false,
+                        rationale:
+                            "Uma chamada de atenção deve ser reservada e respeitosa, não pública e humilhante.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Qual o propósito principal da contribuição mensal ao INSS descontada do salário do trabalhador?",
+                topic: "Direito Previdenciário",
+                hint: "Pense nisso como um 'seguro' que protege o trabalhador quando ele não pode mais exercer sua atividade.",
+                answerOptions: [
+                    {
+                        text: "Garantir ao trabalhador benefícios como aposentadoria, auxílio-doença e pensão.",
+                        isCorrect: true,
+                        rationale:
+                            "Essa contribuição funciona como um seguro social que ampara o trabalhador em momentos de incapacidade ou idade avançada.",
+                    },
+                    {
+                        text: "Financiar o Sistema Único de Saúde (SUS).",
+                        isCorrect: false,
+                        rationale:
+                            "A contribuição ao INSS é direcionada especificamente para os benefícios dos trabalhadores e seus dependentes.",
+                    },
+                    {
+                        text: "Pagar o Imposto de Renda.",
+                        isCorrect: false,
+                        rationale:
+                            "O Imposto de Renda é um tributo diferente, com outra finalidade.",
+                    },
+                    {
+                        text: "Custear o seguro-desemprego.",
+                        isCorrect: false,
+                        rationale:
+                            "O seguro-desemprego é financiado por outro fundo (FAT).",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Qual a diferença essencial entre um contrato de estágio e um contrato de trabalho formal (CLT)?",
+                topic: "Direito do Trabalho",
+                hint: "A natureza do contrato de estágio está diretamente ligada à instituição de ensino do estudante.",
+                answerOptions: [
+                    {
+                        text: "O estágio não gera vínculo de emprego e seu objetivo principal é o aprendizado.",
+                        isCorrect: true,
+                        rationale:
+                            "A lei define o estágio como um ato educativo escolar supervisionado, não uma relação de trabalho tradicional.",
+                    },
+                    {
+                        text: "Apenas o trabalhador CLT tem direito a férias.",
+                        isCorrect: false,
+                        rationale:
+                            "O estagiário também tem direito a um recesso remunerado de 30 dias após 12 meses.",
+                    },
+                    {
+                        text: "O estagiário não precisa cumprir uma carga horária definida.",
+                        isCorrect: false,
+                        rationale:
+                            "O estágio deve prever carga horária clara, compatível com as atividades escolares e limitada por lei.",
+                    },
+                    {
+                        text: "Apenas o estágio exige um supervisor.",
+                        isCorrect: false,
+                        rationale:
+                            "Todo trabalhador também responde a um gestor, mas o supervisor de estágio tem um papel pedagógico obrigatório.",
+                    },
+                ],
+            },
+            {
+                question:
+                    "Um jovem aprendiz sofre piadas e é excluído pelos colegas de forma sistemática. Essa situação se enquadra melhor em qual conceito?",
+                topic: "Direito e Cidadania",
+                hint: "Pense no termo usado para descrever atos de violência intencionais e repetidos, praticados por um ou mais agressores.",
+                answerOptions: [
+                    {
+                        text: "Conflito interpessoal",
+                        isCorrect: false,
+                        rationale:
+                            "Um conflito é uma divergência pontual, enquanto a situação descrita envolve perseguição contínua.",
+                    },
+                    {
+                        text: "Crise de adaptação",
+                        isCorrect: false,
+                        rationale:
+                            "Dificuldades de adaptação não justificam atos de agressão e exclusão por parte dos colegas.",
+                    },
+                    {
+                        text: "Bullying no trabalho",
+                        isCorrect: true,
+                        rationale:
+                            "O bullying é caracterizado por atos negativos e repetitivos, praticados contra uma pessoa, minando sua dignidade.",
+                    },
+                    {
+                        text: "Competitividade excessiva",
+                        isCorrect: false,
+                        rationale:
+                            "A competição saudável não envolve a humilhação ou o isolamento de colegas.",
+                    },
+                ],
+            },
+        ];
+        const screens = {
+            start: document.getElementById("start-screen"),
+            quiz: document.getElementById("quiz-screen"),
+            feedback: document.getElementById("feedback-screen"),
+            end: document.getElementById("end-screen"),
+        };
+        let currentQuestionIndex,
+            score,
+            shuffledQuestions,
+            agentData = {};
 
-        function showScreen(screenName) { Object.values(screens).forEach(screen => screen.classList.add('hidden')); screens[screenName].classList.remove('hidden'); }
-        function startGame() { const agentNameInput = document.getElementById('agent-name'); const name = agentNameInput.value.trim(); if (name === "") { alert("Por favor, insira seu nome de Agente para iniciar a operação."); return; } if (loadProgress() && agentData.name === name) { score = agentData.score; currentQuestionIndex = agentData.currentQuestionIndex; } else { agentData = { name: name, score: 0, currentQuestionIndex: 0, difficulties: {} }; score = 0; currentQuestionIndex = 0; } shuffledQuestions = [...quizData].sort(() => Math.random() - 0.5); showScreen('quiz'); showQuestion(); }
-        function restartGame() { agentData = { name: agentData.name, score: 0, currentQuestionIndex: 0, difficulties: {} }; score = 0; currentQuestionIndex = 0; saveProgress(); startGame(); }
-        function showQuestion() { const questionEl = document.getElementById('question'), answerButtonsEl = document.getElementById('answer-buttons'); answerButtonsEl.innerHTML = ''; const currentQuestion = shuffledQuestions[currentQuestionIndex]; questionEl.innerText = currentQuestion.question; document.getElementById('question-number').innerText = currentQuestionIndex + 1; document.getElementById('hint-button').onclick = showHint; document.getElementById('hint-button').innerText = 'Precisa de uma pista, Agente?'; updateProgressBar(); updateScoreAndRank(); currentQuestion.answerOptions.forEach(answer => { const button = document.createElement('button'); button.innerText = answer.text; button.className = 'answer-btn w-full p-4 rounded-lg bg-gray-700 border border-gray-600 hover:bg-gray-600 text-left'; button.onclick = () => selectAnswer(answer); answerButtonsEl.appendChild(button); }); }
-        function selectAnswer(answer) { const correct = answer.isCorrect; const currentTopic = shuffledQuestions[currentQuestionIndex].topic; if (correct) { score += 15; document.getElementById('feedback-title').innerText = 'Prova Coletada!'; document.getElementById('feedback-title').style.color = '#38a169'; } else { score = Math.max(0, score - 5); document.getElementById('feedback-title').innerText = 'Falso Testemunho!'; document.getElementById('feedback-title').style.color = '#e53e3e'; if (!agentData.difficulties[currentTopic]) agentData.difficulties[currentTopic] = 0; agentData.difficulties[currentTopic]++; } saveProgress(); updateScoreAndRank(); showFeedback(); }
-        function showFeedback() { const rationalesContainerEl = document.getElementById('rationales-container'); const currentQuestion = shuffledQuestions[currentQuestionIndex]; rationalesContainerEl.innerHTML = ''; currentQuestion.answerOptions.forEach(option => { const rationaleDiv = document.createElement('div'); rationaleDiv.className = `p-4 rounded-md ${option.isCorrect ? 'bg-green-900 border-l-4 border-green-500' : 'bg-red-900 border-l-4 border-red-500'}`; rationaleDiv.innerHTML = `<p class="font-bold mb-1">${option.text}</p><p class="text-sm text-gray-300">${option.rationale}</p>`; rationalesContainerEl.appendChild(rationaleDiv); }); showScreen('feedback'); }
-        function nextQuestion() { currentQuestionIndex++; if (currentQuestionIndex < shuffledQuestions.length) { saveProgress(); showScreen('quiz'); showQuestion(); } else { endGame(); } }
-        function endGame() { updateProgressBar(true); showScreen('end'); document.getElementById('final-agent-name').innerText = agentData.name; document.getElementById('final-score').innerText = score; const finalRank = getRank(score); document.getElementById('final-rank').innerText = finalRank; let message = "Continue treinando para aprimorar suas habilidades investigativas!"; if (finalRank === 'Mestre da Justiça') message = "Excelente trabalho! Você demonstrou um conhecimento exemplar da lei."; else if (finalRank === 'Guardião(ã) da Lei') message = "Ótimo desempenho! Você tem um futuro brilhante como protetor da justiça."; document.getElementById('end-message').innerText = message; showBadges(finalRank); generateStudyGuide(); saveDataForAdmin(); localStorage.removeItem('operacaoJusticaProgress'); }
-        function saveProgress() { agentData.score = score; agentData.currentQuestionIndex = currentQuestionIndex; localStorage.setItem('operacaoJusticaProgress', JSON.stringify(agentData)); }
-        function loadProgress() { const savedData = localStorage.getItem('operacaoJusticaProgress'); if (savedData) { agentData = JSON.parse(savedData); return true; } return false; }
-        function updateScoreAndRank() { document.getElementById('score').innerText = score; document.getElementById('rank').innerText = getRank(score); }
-        function getRank(currentScore) { if (currentScore <= 50) return 'Cadete da Justiça'; if (currentScore <= 100) return 'Investigador(a) Legal'; if (currentScore <= 150) return 'Guardião(ã) da Lei'; return 'Mestre da Justiça'; }
-        function updateProgressBar(isEnd = false) { const progress = isEnd ? 100 : (currentQuestionIndex / shuffledQuestions.length) * 100; document.getElementById('progress-bar').style.width = `${progress}%`; }
-        function showHint() { const hintButton = document.getElementById('hint-button'); hintButton.innerText = shuffledQuestions[currentQuestionIndex].hint; hintButton.onclick = null; }
-        function showBadges(finalRank) { if (score > 50) document.getElementById('badge-1').classList.remove('hidden-badge'); if (score > 80) document.getElementById('badge-2').classList.remove('hidden-badge'); if (score > 110) document.getElementById('badge-3').classList.remove('hidden-badge'); if (finalRank === 'Mestre da Justiça') document.getElementById('badge-4').classList.remove('hidden-badge'); }
-        function generateStudyGuide() { const guideContainer = document.getElementById('study-guide-container'), guideText = document.getElementById('study-guide-text'), tutorLink = document.getElementById('tutor-link-personalized'); const sortedDifficulties = Object.entries(agentData.difficulties).sort(([, a], [, b]) => b - a); if (sortedDifficulties.length > 0) { const topDifficulties = sortedDifficulties.map(item => item[0]).join(', '); let prompt_para_ia = `Olá Tutor SENAI. Meu nome é ${agentData.name}. Concluí a simulação "Operação Justiça em Ação" e meu sistema identificou que preciso de reforço nos seguintes temas: ${topDifficulties}. Pode me ajudar a revisar os conceitos chave desses tópicos com exemplos práticos?`; guideText.innerHTML = `Análise tática identificou oportunidades de melhoria nos seguintes tópicos: <strong>${topDifficulties}</strong>. <br><br><strong class='text-yellow-400'>Copie a mensagem abaixo e cole no seu Tutor Gemini:</strong><br><textarea readonly class='w-full bg-gray-900 p-2 mt-2 rounded border border-gray-600 text-gray-300'>${prompt_para_ia}</textarea>`; tutorLink.href = "https://gemini.google.com/u/1/gem/40be5599dc62"; guideContainer.classList.remove('hidden'); } else { guideContainer.classList.add('hidden'); } }
-        
+        function showScreen(screenName) {
+            Object.values(screens).forEach((screen) =>
+                screen.classList.add("hidden")
+            );
+            screens[screenName].classList.remove("hidden");
+        }
+        function startGame() {
+            const agentNameInput = document.getElementById("agent-name");
+            const name = agentNameInput.value.trim();
+            if (name === "") {
+                alert(
+                    "Por favor, insira seu nome de Agente para iniciar a operação."
+                );
+                return;
+            }
+            if (loadProgress() && agentData.name === name) {
+                score = agentData.score;
+                currentQuestionIndex = agentData.currentQuestionIndex;
+            } else {
+                agentData = {
+                    name: name,
+                    score: 0,
+                    currentQuestionIndex: 0,
+                    difficulties: {},
+                };
+                score = 0;
+                currentQuestionIndex = 0;
+            }
+            shuffledQuestions = [...quizData].sort(() => Math.random() - 0.5);
+            showScreen("quiz");
+            showQuestion();
+        }
+        function restartGame() {
+            agentData = {
+                name: agentData.name,
+                score: 0,
+                currentQuestionIndex: 0,
+                difficulties: {},
+            };
+            score = 0;
+            currentQuestionIndex = 0;
+            saveProgress();
+            startGame();
+        }
+        function showQuestion() {
+            const questionEl = document.getElementById("question"),
+                answerButtonsEl = document.getElementById("answer-buttons");
+            answerButtonsEl.innerHTML = "";
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            questionEl.innerText = currentQuestion.question;
+            document.getElementById("question-number").innerText =
+                currentQuestionIndex + 1;
+            document.getElementById("hint-button").onclick = showHint;
+            document.getElementById("hint-button").innerText =
+                "Precisa de uma pista, Agente?";
+            updateProgressBar();
+            updateScoreAndRank();
+            currentQuestion.answerOptions.forEach((answer) => {
+                const button = document.createElement("button");
+                button.innerText = answer.text;
+                button.className =
+                    "answer-btn w-full p-4 rounded-lg bg-gray-700 border border-gray-600 hover:bg-gray-600 text-left";
+                button.onclick = () => selectAnswer(answer);
+                answerButtonsEl.appendChild(button);
+            });
+        }
+        function selectAnswer(answer) {
+            const correct = answer.isCorrect;
+            const currentTopic = shuffledQuestions[currentQuestionIndex].topic;
+            if (correct) {
+                score += 15;
+                document.getElementById("feedback-title").innerText =
+                    "Prova Coletada!";
+                document.getElementById("feedback-title").style.color = "#38a169";
+            } else {
+                score = Math.max(0, score - 5);
+                document.getElementById("feedback-title").innerText =
+                    "Falso Testemunho!";
+                document.getElementById("feedback-title").style.color = "#e53e3e";
+                if (!agentData.difficulties[currentTopic])
+                    agentData.difficulties[currentTopic] = 0;
+                agentData.difficulties[currentTopic]++;
+            }
+            saveProgress();
+            updateScoreAndRank();
+            showFeedback();
+        }
+        function showFeedback() {
+            const rationalesContainerEl = document.getElementById(
+                "rationales-container"
+            );
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            rationalesContainerEl.innerHTML = "";
+            currentQuestion.answerOptions.forEach((option) => {
+                const rationaleDiv = document.createElement("div");
+                rationaleDiv.className = `p-4 rounded-md ${option.isCorrect
+                        ? "bg-green-900 border-l-4 border-green-500"
+                        : "bg-red-900 border-l-4 border-red-500"
+                    }`;
+                rationaleDiv.innerHTML = `<p class="font-bold mb-1">${option.text}</p><p class="text-sm text-gray-300">${option.rationale}</p>`;
+                rationalesContainerEl.appendChild(rationaleDiv);
+            });
+            showScreen("feedback");
+        }
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                saveProgress();
+                showScreen("quiz");
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+        function endGame() {
+            updateProgressBar(true);
+            showScreen("end");
+            document.getElementById("final-agent-name").innerText = agentData.name;
+            document.getElementById("final-score").innerText = score;
+            const finalRank = getRank(score);
+            document.getElementById("final-rank").innerText = finalRank;
+            let message =
+                "Continue treinando para aprimorar suas habilidades investigativas!";
+            if (finalRank === "Mestre da Justiça")
+                message =
+                    "Excelente trabalho! Você demonstrou um conhecimento exemplar da lei.";
+            else if (finalRank === "Guardião(ã) da Lei")
+                message =
+                    "Ótimo desempenho! Você tem um futuro brilhante como protetor da justiça.";
+            document.getElementById("end-message").innerText = message;
+            showBadges(finalRank);
+            generateStudyGuide();
+            saveDataForAdmin();
+            document.getElementById('video-card').classList.remove('hidden');
+            localStorage.removeItem("operacaoJusticaProgress");
+        }
+        function saveProgress() {
+            agentData.score = score;
+            agentData.currentQuestionIndex = currentQuestionIndex;
+            localStorage.setItem(
+                "operacaoJusticaProgress",
+                JSON.stringify(agentData)
+            );
+        }
+        function loadProgress() {
+            const savedData = localStorage.getItem("operacaoJusticaProgress");
+            if (savedData) {
+                agentData = JSON.parse(savedData);
+                return true;
+            }
+            return false;
+        }
+        function updateScoreAndRank() {
+            document.getElementById("score").innerText = score;
+            document.getElementById("rank").innerText = getRank(score);
+        }
+        function getRank(currentScore) {
+            if (currentScore <= 50) return "Cadete da Justiça";
+            if (currentScore <= 100) return "Investigador(a) Legal";
+            if (currentScore <= 150) return "Guardião(ã) da Lei";
+            return "Mestre da Justiça";
+        }
+        function updateProgressBar(isEnd = false) {
+            const progress = isEnd
+                ? 100
+                : (currentQuestionIndex / shuffledQuestions.length) * 100;
+            document.getElementById("progress-bar").style.width = `${progress}%`;
+        }
+        function showHint() {
+            const hintButton = document.getElementById("hint-button");
+            hintButton.innerText = shuffledQuestions[currentQuestionIndex].hint;
+            hintButton.onclick = null;
+        }
+        function showBadges(finalRank) {
+            if (score > 50)
+                document.getElementById("badge-1").classList.remove("hidden-badge");
+            if (score > 80)
+                document.getElementById("badge-2").classList.remove("hidden-badge");
+            if (score > 110)
+                document.getElementById("badge-3").classList.remove("hidden-badge");
+            if (finalRank === "Mestre da Justiça")
+                document.getElementById("badge-4").classList.remove("hidden-badge");
+        }
+        function generateStudyGuide() {
+            const guideContainer = document.getElementById("study-guide-container"),
+                guideText = document.getElementById("study-guide-text"),
+                tutorLink = document.getElementById("tutor-link-personalized");
+            const sortedDifficulties = Object.entries(agentData.difficulties).sort(
+                ([, a], [, b]) => b - a
+            );
+            if (sortedDifficulties.length > 0) {
+                const topDifficulties = sortedDifficulties
+                    .map((item) => item[0])
+                    .join(", ");
+                let prompt_para_ia = `Olá Tutor SENAI. Meu nome é ${agentData.name}. Concluí a simulação "Operação Justiça em Ação" e meu sistema identificou que preciso de reforço nos seguintes temas: ${topDifficulties}. Pode me ajudar a revisar os conceitos chave desses tópicos com exemplos práticos?`;
+                guideText.innerHTML = `Análise tática identificou oportunidades de melhoria nos seguintes tópicos: <strong>${topDifficulties}</strong>. <br><br><strong class='text-yellow-400'>Copie a mensagem abaixo e cole no seu Tutor Gemini:</strong><br><textarea readonly class='w-full h-full bg-gray-900 p-2 mt-2 rounded border border-gray-600 text-gray-300'>${prompt_para_ia}</textarea>`;
+                tutorLink.href = "https://gemini.google.com/u/1/gem/40be5599dc62";
+                guideContainer.classList.remove("hidden");
+            } else {
+                guideContainer.classList.add("hidden");
+            }
+        }
+
+        function openStorybook() {
+            window.open("https://gemini.google.com/share/85734affc482", "_blank");
+        }
+
         function saveDataForAdmin() {
-            const adminDataKey = 'operacaoJusticaAdminData';
+            const adminDataKey = "operacaoJusticaAdminData";
             let allResults = [];
             try {
                 const existingData = localStorage.getItem(adminDataKey);
-                if (existingData) { allResults = JSON.parse(existingData); }
-            } catch (e) { console.error("Dados de admin corrompidos, resetando:", e); allResults = []; }
-            
-            const difficultiesString = Object.keys(agentData.difficulties).join(', ') || 'Nenhuma';
+                if (existingData) {
+                    allResults = JSON.parse(existingData);
+                }
+            } catch (e) {
+                console.error("Dados de admin corrompidos, resetando:", e);
+                allResults = [];
+            }
+
+            const difficultiesString =
+                Object.keys(agentData.difficulties).join(", ") || "Nenhuma";
             const newResult = {
-                timestamp: new Date().toLocaleString('pt-BR'),
+                timestamp: new Date().toLocaleString("pt-BR"),
                 agentName: agentData.name,
                 finalScore: score,
                 finalRank: getRank(score),
-                difficulties: difficultiesString
+                difficulties: difficultiesString,
             };
             allResults.push(newResult);
             localStorage.setItem(adminDataKey, JSON.stringify(allResults));
         }
     </script>
 </body>
+
 </html>
