@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Controle - Operação Justiça</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #1a202c; color: #e2e8f0;}
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #4a5568; padding: 12px; text-align: left; }
+        th { background-color: #2d3748; }
+        tr:nth-child(even) { background-color: #2c3344; }
+        #login-overlay { background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+    </style>
+</head>
+<body class="p-8">
+    <div id="login-overlay" class="fixed inset-0 flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl text-center">
+            <h2 class="text-2xl font-bold mb-4">Acesso Restrito</h2>
+            <input type="password" id="password" placeholder="Senha de Acesso" class="bg-gray-900 text-center p-2 rounded mb-4 border border-gray-600">
+            <button onclick="login()" class="bg-yellow-500 text-gray-900 font-bold py-2 px-6 rounded">Entrar</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden">
+        <h1 class="text-4xl font-bold mb-6 text-yellow-400">Painel de Desempenho dos Agentes</h1>
+        <button onclick="loadData()" class="bg-blue-600 mb-6 py-2 px-4 rounded">Atualizar Dados</button>
+        <button onclick="clearData()" class="bg-red-600 mb-6 py-2 px-4 rounded">Limpar Todos os Registros</button>
+        <div class="overflow-x-auto">
+            <table id="results-table">
+                <thead> <tr> <th>Data/Hora</th> <th>Nome do Agente</th> <th>Pontuação Final</th> <th>Rank Obtido</th> <th>Tópicos com Dificuldade</th> </tr> </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "SENAI2025";
+        const ADMIN_DATA_KEY = 'operacaoJusticaAdminData';
+
+        function login() {
+            if (document.getElementById('password').value === ADMIN_PASSWORD) {
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadData();
+            } else { alert('Senha incorreta.'); }
+        }
+        
+        function loadData() {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            let allResults = [];
+            try {
+                const storedData = localStorage.getItem(ADMIN_DATA_KEY);
+                if (storedData) { allResults = JSON.parse(storedData); }
+            } catch (e) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-400">ERRO: Dados salvos estão corrompidos. Limpe os registros para resolver.</td></tr>';
+                return;
+            }
+
+            if (!Array.isArray(allResults) || allResults.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhum dado de aluno foi registrado. Jogue uma partida para que os resultados apareçam.</td></tr>';
+                return;
+            }
+
+            allResults.slice().reverse().forEach(result => {
+                const tableRow = document.createElement('tr');
+                tableRow.innerHTML = `
+                    <td>${result.timestamp || 'N/A'}</td>
+                    <td>${result.agentName || 'N/A'}</td>
+                    <td>${result.finalScore !== undefined ? result.finalScore : 'N/A'}</td>
+                    <td>${result.finalRank || 'N/A'}</td>
+                    <td>${result.difficulties || 'N/A'}</td>
+                `;
+                tableBody.appendChild(tableRow);
+            });
+        }
+
+        function clearData() {
+            if (confirm("Você tem certeza que deseja apagar PERMANENTEMENTE todos os registros? Esta ação não pode ser desfeita.")) {
+                localStorage.removeItem(ADMIN_DATA_KEY);
+                loadData();
+                alert("Todos os registros foram apagados.");
+            }
+        }
+
+        document.getElementById('password').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') { login(); }
+        });
+    </script>
+</body>
+</html>
